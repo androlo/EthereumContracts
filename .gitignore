@@ -1,0 +1,7 @@
+bin/
+misc/
+old/
+.settings
+.project
+.classpath
+*~
