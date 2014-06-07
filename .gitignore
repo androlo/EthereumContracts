@@ -1,6 +1,7 @@
 bin/
 misc/
 old/
+z_tests/
 .settings
 .project
 .classpath
