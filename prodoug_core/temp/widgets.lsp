@@ -183,7 +183,7 @@
 						)
 					}
 				)
-	
+				
 				;Now clear out this element and all its associated data.
 				
 				[0x40] @@ @0x20

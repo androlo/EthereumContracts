@@ -145,7 +145,7 @@
 														}
 													) ; Only "actions" can do this.
 													
-													(unless (> (calldataload 32) 0x40) 
+													(unless (&& (> (calldataload 32) 0x40) (calldataload 64))
 														{
 															[0x0] 0
 															(return 0x0 32)
@@ -161,17 +161,7 @@
 													(call (- (GAS) 100) @0x0 0 0x20 64 0x0 32)
 													
 													(unless @0x0 (return 0x0 32) ) ; Stop if there is no poll of this type.
-													
-													[0x20] "isautopass"
-													(call (- (GAS) 100) @0x0 0 0x20 32 0x0 32)
-													
-													(when @0x0 ; If it is autopass, you can't set the time.
-														{
-															[0x0] 0
-															(return 0x0 32)
-														}
-													)
-																										
+																																							
 													[[0x11]] (calldataload 32) ; poll name
 													[[0x12]] (calldataload 64) ; new poll time
 												}
@@ -206,17 +196,7 @@
 													(call (- (GAS) 100) @0x0 0 0x20 64 0x0 32)
 													
 													(unless @0x0 (return 0x0 32) ) ; Stop if there is no poll of this type.
-													
-													[0x20] "isautopass"
-													(call (- (GAS) 100) @0x0 0 0x20 32 0x0 32)
-													
-													(when @0x0 ; If it is autopass, you can't set the time.
-														{
-															[0x0] 0
-															(return 0x0 32)
-														}
-													)
-																					
+																																		
 													[0x20] "settimelimit"
 													[0x40] @@0x11
 													[0x60] @@0x12
@@ -287,26 +267,23 @@
 						}
 					) ; Only "actions" can do this.
 					
+					(unless (&& (> (calldataload 32) 0x40) (calldataload 64))
+						{
+							[0x0] 0
+							(return 0x0 32)
+						}
+					)
+					
 					[0x0] "get"
 					[0x20] "polltypes"
 					(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
 					
 					[0x20] "haspoll"
 					[0x40] (calldataload 32)
-					(call (- (GAS) 100) @0x0 0 0x20 64 0x0 32)
+					(call (- (GAS) 100) @0x0 0 0x20 64 0x20 32)
 					
-					(unless @0x0 (return 0x0 32) ) ; Stop if there is no poll of this type.
-					
-					[0x20] "isautopass"
-					(call (- (GAS) 100) @0x0 0 0x20 32 0x0 32)
-					
-					(when @0x0 ; If it is autopass, you can't set the time.
-						{
-							[0x0] 0
-							(return 0x0 32)
-						}
-					)
-													
+					(unless @0x20 (return 0x20 32) ) ; Stop if there is no poll of this type.
+																		
 					[0x20] "settimelimit"
 					[0x40] (calldataload 32)
 					[0x60] (calldataload 64)

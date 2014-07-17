@@ -1,7 +1,7 @@
 ; INIT
 {	
 	;For DOUG integration
-	[[0x10]] 0x07a03c311f07ad616e551daaee83e330c702559b ;Doug Address
+	[[0x10]] 0x8bffd298a64ee36eb7b99dcc00d2c67259d15c60 ;Doug Address
 	;List data section
 	[[0x11]] 0x0										;Size of list
 	[[0x12]] 0x0										;Tail address
@@ -14,7 +14,7 @@
 	; Add userdata (UserData contract) when constructing.
 	[0x0](LLL
 	{
-		[[0x10]] 0x07a03c311f07ad616e551daaee83e330c702559b
+		[[0x10]] 0x8bffd298a64ee36eb7b99dcc00d2c67259d15c60
 		;body section
 		[0x0](LLL
 			{
@@ -55,7 +55,13 @@
 							    [[0x1]] "userdata"
 							   ;[[0x2]] Reserved for user address.
 								[[0x3]] (TIMESTAMP) ; Date of creation.
-								[[0x4]] 1 ; Reputation.
+							   ;[[0x4]] 0 ; Sovereigns
+							   ;[[0x5]] address to holdings.
+							   ;[[0x6]] home (address)
+							   
+							   ;[[0x111]] 0 ; Size
+							   ;[[0x112]] 0 ; Head
+							   ;[[0x113]] 0 ; Tail
 								
 								;body section
 								[0x0](LLL
@@ -317,14 +323,74 @@
 								)
 								
 								; USAGE: 0 : "clear"
-								; RETURNS: Returns 0 (not allowed in UserData)
+								; RETURNS: 1 if successful, otherwise 0
 								; INTERFACE: Group
 								(when (= (calldataload 0) "clear")
-									{		
-										[0x0] 0 
+									{	
+										; If the group is empty, return.
+										(unless @@0x111
+											{
+												[0x0] 1
+												(return 0x0 32)
+											}
+										)
+										
+										[0x40] "get"
+										[0x60] "actions"
+										(call (- (GAS) 100) @@0x10 0 0x40 64 0x80 32)
+										
+										(when @0x80 ; If so, validate the caller to make sure it's a proper action.
+											{
+												[0x40] "validate"
+												[0x60] (CALLER)
+												(call (- (GAS) 100) @0x80 0 0x40 64 0x40 32)
+												
+												(unless @0x40 (return 0x40 32) )		
+											}
+										)
+										
+										;Get users to 0x0
+										[0x0] "get"
+										[0x20] "users"
+										(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
+										
+										[0xA0] @@0x2
+										
+										[0x40] "getnick"
+										[0x60] @@0x2
+										(call (- (GAS) 100) @0x0 0 0x40 64 0xA0 32) ;User name at 0xA0
+										
+										;Start at tail
+										[0x20] @@0x112
+										
+										; While we have a next element.
+										(while @0x20
+											{
+												[0x60] "removeuser"
+												[0x80] @0xA0
+												(call (- (GAS) 100) @@ @0x20 0 0x60 64 0x40 32)
+												
+												;Do a little thing.
+												[0x40] @0x20
+												[0x20] @@(+ @0x20 2)
+												
+												;Now clear this entry.
+												[[@0x40]] 0
+												[[(+ @0x40 1)]] 0
+												[[(+ @0x40 2)]] 0
+											}	
+										)
+										
+										; Clear size, head and tail.
+										[[0x111]] 0
+										[[0x112]] 0
+										[[0x113]] 0
+										
+										[0x0] 1
 										(return 0x0 32)
 									}
 								)
+								
 										
 								; USAGE: 0 : "setname" "name"
 								; RETURNS: 0 (not allowed in UserData)
@@ -332,6 +398,140 @@
 								(when (= (calldataload 0) "setname")
 									{		
 										[0x0] 0
+										(return 0x0 32)
+									}
+								)
+								
+								; USAGE: 0 : "gettokens"
+								; RETURNS: Amount of tokens.											
+								(when (= @0x0 "gettokens")
+									{
+										[0x0] @@0x4
+										(return 0x0 32)
+									}
+								)
+								
+								; USAGE: 0 : "addtokens", 32 : amount
+								; RETURNS: 1
+								(when (= @0x0 "addtokens")
+									{
+										[0x40] "get"
+										[0x60] "actions"
+										(call (- (GAS) 100) @@0x10 0 0x0 64 0x80 32)
+										
+										(when @0x80 ; If so, validate the caller to make sure it's a proper action.
+											{
+												[0x40] "validate"
+												[0x60] (CALLER)
+												(call (- (GAS) 100) @0x80 0 0x40 64 0x40 32)
+		
+												(unless @0x40 (return 0x40 32) )		
+											}
+										)
+										
+										[[0x4]] (+ @@0x4 (calldataload 32) )
+										
+										[0x0] 1
+										(return 0x0 32)
+									}
+								)
+								
+								; USAGE: 0 : "removetokens", 32 : amount
+								; RETURNS: 1										
+								(when (= @0x0 "removetokens")
+									{
+										(when (< @@0x4 (calldataload 32))
+											{
+												[0x0] 0
+												(return 0x0 32)
+											}
+										)
+										
+										[0x40] "get"
+										[0x60] "actions"
+										(call (- (GAS) 100) @@0x10 0 0x0 64 0x80 32)
+										
+										(when @0x80 ; If so, validate the caller to make sure it's a proper action.
+											{
+												[0x40] "validate"
+												[0x60] (CALLER)
+												(call (- (GAS) 100) @0x80 0 0x40 64 0x40 32)
+		
+												(unless @0x40 (return 0x40 32) )		
+											}
+										)
+										
+										[[0x4]] (- @@0x4 (calldataload 32))
+										
+										[0x0] 1
+										(return 0x0 32)
+									}
+								)
+								
+								; USAGE: 0 : "setholdings", 32 : address
+								; NOTES: Can only be set once.
+								; RETURNS: 1 if succesful, 0 otherwise.									
+								(when (= @0x0 "setholdings")
+									{
+										[0x0] "get"
+										[0x20] "users"
+										(call (- (GAS) 100) @@0x10 0 0x0 64 0x20 32)
+										
+										(unless (= (CALLER) @0x20) ; Only users are allowed to do this.
+											{
+												[0x0] 0
+												(return 0x0 32)
+											}
+										)
+										
+										[[0x5]] (calldataload 32)
+										
+										[0x0] 1
+										(return 0x0 32)
+									}
+								)
+								
+								; USAGE: 0 : "getholdings"
+								; RETURNS: The address of the holdings contract.										
+								(when (= @0x0 "getholdings") 
+									{
+										[0x0] @@0x5
+										(return 0x0 32)
+									}
+								)
+								
+								; USAGE: 0 : "sethome", 32 : address
+								; NOTES: Set the address of the house
+								; RETURNS: 1 if succesful, 0 otherwise.									
+								(when (= @0x0 "sethome")
+									{																				
+										
+										[0x40] "get"
+										[0x60] "actions"
+										(call (- (GAS) 100) @@0x10 0 0x0 64 0x80 32)
+												
+										(when @0x80 ; If so, validate the caller to make sure it's a proper action.
+											{
+												[0x40] "validate"
+												[0x60] (CALLER)
+												(call (- (GAS) 100) @0x80 0 0x40 64 0x40 32)
+				
+												(unless @0x40 (return 0x40 32) )	
+											}
+										)
+										
+										[[0x6]] (calldataload 32)
+										
+										[0x0] 1
+										(return 0x0 32)
+									}
+								)
+								
+								; USAGE: 0 : "gethome"
+								; RETURNS: The home address.										
+								(when (= @0x0 "gethome") 
+									{
+										[0x0] @@0x6
 										(return 0x0 32)
 									}
 								)
@@ -346,9 +546,11 @@
 										(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32) 
 														
 										(unless (= (CALLER) @0x0) (stop) ) ; Only 'actions' can do this.
+																				
 										(suicide (CALLER))
 									}
 								)
+								
 							} 0x20 )
 							(return 0x20 @0x0) ;Return body
 							} 0x20 )

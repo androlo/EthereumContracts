@@ -168,7 +168,7 @@
 													(call (- (GAS) 100) @0x80 0 0x40 64 0x40 32)
 													; Second part of || is because we want groups to 
 													; be able to delete not just references, but 
-													; whole cross references.
+													; cross references.
 													(unless (|| @0x40 (= (CALLER) @@ @0x20) ) (return 0x40 32) )		
 												}
 											)
@@ -363,7 +363,6 @@
 													[[@0x40]] 0
 													[[(+ @0x40 1)]] 0
 													[[(+ @0x40 2)]] 0
-													[0x0] 9
 												}	
 											)
 											; Clear size, head and tail.

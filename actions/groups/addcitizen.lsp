@@ -276,7 +276,7 @@
 					
 					; If no 'Citizens' group exists - cancel.
 					(unless @0xA0 (return 0xA0 32) )
-					
+										
 					; Add the user to the Citizens group.
 					[0x40] "adduser"
 					[0x60] (calldataload 32)
@@ -296,7 +296,7 @@
 					(return 0x0 32)
 				}
 			)
-					
+				
 			; Only 'actiontypes'can do this.
 			(when (&& (= (calldataload 0) "kill") (= (CALLER) @0x0) ) (suicide (CALLER)) )
 			

@@ -288,7 +288,7 @@
 					[0x0] "get"
 					[0x20] "actions"
 					(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
-							
+					
 					(unless (= (CALLER) @0x0) 
 						{
 							[0x0] 0

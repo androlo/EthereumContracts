@@ -1,10 +1,15 @@
 {	
-	[[0x10]] 0x07a03c311f07ad616e551daaee83e330c702559b; DOUG address 
+	[[0x10]] 0x8bffd298a64ee36eb7b99dcc00d2c67259d15c60 ; DOUG address 
 	[[0x11]] 4; Size of a log entry.
 	[[0x12]] 0x20 ; This is the next empty log address.
 	[[0x13]] 10ether ; Maximum amount of money in one transaction.
+    [[0x15]] 1ether ; Token cost.
+   ;[[0x16]] 0 ; Total number of tokens sold.
+   ;[[0x17]] 0 ; Total number of tokens awarded. 
    ;[[0x20]] this is where the log starts.
 	
+	
+		
 	[0x0] "reg"
 	[0x20] "bank"
 	(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32) ;Register with DOUG  TODO remove.
@@ -12,8 +17,8 @@
 	; BODY
 	(return 0x0 (lll 
 	{
-		
 		[0x0] (calldataload 0) ; This is the command.
+		[0x20] (calldataload 32) ; This is the command.
 		
 		; USAGE: 0 : "balance"
 		; RETURNS: The balance of the bank.
@@ -46,6 +51,8 @@
 						(return 0x0 32)
 					}
 				)
+				
+				
 				
 				[[0x13]] (calldataload 32)
 				[0x0] 1
@@ -141,9 +148,112 @@
 			}
 		)
 		
+		; USAGE: 0 : "gettokenprice"
+		; RETURNS: The price of a token.
+		; INTERFACE Bank
+		(when (= @0x0 "gettokenprice")
+			{
+				[0x0] @@0x15
+				(return 0x0 32)
+			}
+		)
+		
+		; USAGE: 0 : "settokenprice", 32 : new price
+		; RETURNS: 1
+		; INTERFACE Bank
+		(when (= @0x0 "settokenprice")
+			{
+				[0x40] "get"
+				[0x60] "actions"
+				(call (- (GAS) 100) @@0x10 0 0x0 64 0x80 32)
+				
+				(when @0x80 ; If so, validate the caller to make sure it's a proper action.
+					{
+						[0x40] "validate"
+						[0x60] (CALLER)
+						(call (- (GAS) 100) @0x80 0 0x40 64 0x40 32)
+
+						(unless @0x40 (return 0x40 32) )		
+					}
+				)
+				
+				[[0x15]] (calldataload 32)
+			}
+		)
+				
+		; USAGE: 0 : "selltokens", 32 : amount, 64 : seller address
+		; RETURNS: 1 if success, 0 otherwise.
+		; NOTES: Sell a number of tokens, at the given price.
+		; INTERFACE Bank
+		(when (= @0x0 "selltokens")
+			{
+				[0x40] "get"
+				[0x60] "actions"
+				(call (- (GAS) 100) @@0x10 0 0x0 64 0x80 32)
+				
+				(when @0x80 ; If so, validate the caller to make sure it's a proper action.
+					{
+						[0x40] "validate"
+						[0x60] (CALLER)
+						(call (- (GAS) 100) @0x80 0 0x40 64 0x40 32)
+
+						(unless @0x40 (return 0x40 32) )		
+					}
+				)
+				
+				[[0x16]] (+ @0x16 (calldataload 32))
+				
+				; Log the transaction.
+				[0x0] @@0x12
+				[[@0x0]]		"Sovereigns sold"
+				[[(+ @0x0 1)]] 	(TIMESTAMP)
+				[[(+ @0x0 2)]] 	(calldataload 64)
+				[[(+ @0x0 3)]] 	(calldataload 32)
+				[[0x12]] (+ @@0x12 @@0x11)
+				
+				[0x0] 1
+				(return 0x0 32)
+			}
+		)
+		
+		; USAGE: 0 : "awardtokens", 32 : amount, 64 : address
+		; RETURNS: 1 if success, 0 otherwise.
+		; NOTES: Give out a number of tokens without cost.
+		; INTERFACE Bank
+		(when (= @0x0 "awardtokens")
+			{
+				[0x40] "get"
+				[0x60] "actions"
+				(call (- (GAS) 100) @@0x10 0 0x0 64 0x80 32)
+				
+				(when @0x80 ; If so, validate the caller to make sure it's a proper action.
+					{
+						[0x40] "validate"
+						[0x60] (CALLER)
+						(call (- (GAS) 100) @0x80 0 0x40 64 0x40 32)
+
+						(unless @0x40 (return 0x40 32) )		
+					}
+				)
+				
+				[[0x17]] (+ @@0x17 (calldataload 32))
+				
+				; Log the transaction.
+				[0x0] @@0x12
+				[[@0x0]]		"Sovereigns awarded"
+				[[(+ @0x0 1)]] 	(TIMESTAMP)
+				[[(+ @0x0 2)]] 	(calldataload 64)
+				[[(+ @0x0 3)]] 	(calldataload 32)
+				[[0x12]] (+ @@0x12 @@0x11)
+				
+				[0x0] 1
+				(return 0x0 32)
+			}
+		)
+		
 		[0x0] 0
 		(return 0x0 32)
 		
 	} 
-	0x0 ) ) ; End of body 
+	0x0 ) ) ; End of body
 }

@@ -217,7 +217,7 @@
 					(return 0x0 32)
 				}
 			)
-					
+			
 			; Only 'actiontypes'can do this.
 			(when (&& (= (calldataload 0) "kill") (= (CALLER) @0x0) ) (suicide (CALLER)) )
 			

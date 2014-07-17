@@ -11,7 +11,7 @@
 	[[0x11]] 0x0										;Size of list
 	[[0x12]] 0x0										;Tail address
 	[[0x13]] 0x0										;Head address
-		
+	
 	; BODY
 	(return 0x0 (lll 
 	{
@@ -47,33 +47,16 @@
 				;When there is an actions contract.
 				(when @@"actions"
 					{
-						; TODO Remove this after debugging IMPORTANT
-						(if (|| (= @0x20 "polltypes") (= @0x20 "actions") (= @0x20 "actiontypes") (= @0x20 "usertypes") (= @0x20 "users") ) 
-							{
-								; Suicide the de-regged contract (TODO observe this)
-								[0x80] "kill"
-								(call (- (GAS) 100) @@ @0x20 0 0x80 32 0x80 32)
-								
-								[[@0x20]] (caller)
-								[0x0] 1
-								(return 0x0 32)
-							} ; true
+						(unless (=(calldataload 32) "actions")
 							{
 								[0x60] "validate"
 								[0x80] (CALLER)
 								(call (- (GAS) 100) @@"actions" 0 0x60 64 0x60 32)
-								(unless @0x60
-									{
-										[0x0] 0
-										(return 0x0 32)
-									}
-								)
-							} ; false
-						) ; if
+								(unless @0x60 (return @0x60 32) )		
+							}
+						)
 					} ; when body
 				)
-				
-				; Arriving here means there is no vote contract in place.
 				
 				; If no address is provided in txdata, use the caller address.
 				(unless @0x40
@@ -84,15 +67,27 @@
 				
 				; If the name is already registered, just overwrite. 
 				(when @@ @0x20
-					;TODO keep eyes out on auto suicide.
-					
 					{
+						
+						; Dump (not implemented in most contracts yet)
+						[0x80] "dump"	; Dump data from old contract to new
+						[0xA0] @0x40 	; The address of the new contract
+						(call (- (GAS) 100) @@ @0x20 0 0x80 64 0x80 32)
+						
+						; Suicide the de-regged contract. 
+						; Don't suicide actions as it is currently running (TODO observe this).
+						(unless (= @0x20 "actions")
+							{
+								[0x80] "kill"
+								(call (- (GAS) 100) @@ @0x20 0 0x80 32 0x80 32)
+							}
+						)
 						[[@0x20]] @0x40
 						[0x0] 2
 						(return 0x0 32)
 					}
 				)
-							
+				
 				;Store sender at name.
 				[[@0x20]] @0x40
 				
@@ -129,23 +124,19 @@
 				;When there is an actions contract.
 				(when @@"actions"
 					{
-						; TODO Remove this after debugging IMPORTANT
-						(unless (|| (= @0x20 "polltypes") (= @0x20 "actions") (= @0x20 "actiontypes") (= @0x20 "usertypes") (= @0x20 "users") )
-							{
-								[0x60] "validate"
-								[0x80] (CALLER)
-								(call (- (GAS) 100) @@"actions" 0 0x60 64 0x60 32)
-								(unless @0x60 (return 0x60 32) )
-							}
-						)
+						[0x60] "validate"
+						[0x80] (CALLER)
+						(call (- (GAS) 100) @@"actions" 0 0x60 64 0x60 32)
+						(unless @0x60 (return 0x60 32) )
 					}
 				)
+				
 				(when (= @0x20 "doug") ; If the contract name is "doug", suicide the contract.
 					{
 						(suicide (CALLER) )
 					}
 				)
-				
+								
 				; Suicide the de-regged contract (TODO observe this)
 				[0x80] "kill"
 				(call (- (GAS) 100) @@ @0x20 0 0x80 32 0x80 32)

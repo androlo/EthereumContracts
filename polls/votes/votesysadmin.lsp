@@ -53,7 +53,24 @@
 			[0x20] "polltypes"
 			(call (- (GAS) 100) @@0x10 0 0x0 64 0x40 32)
 			
-				
+			; USAGE: 0 : "settimelimit", 32 : timelimit
+			; RETURNS: 1 if success, otherwise 0.
+			; NOTE set the time limit (in seconds) before the poll expires.
+			; INTERFACE Poll
+			(when (= (calldataload 0) "settimelimit") 
+				{
+					(unless (= (CALLER) @0x40)
+						{
+							[0x0] 0
+							(return 0x0 32)
+						}
+					)
+					[[0x1]] (calldataload 32)
+					[0x0] 0
+					(return 0x0 32)
+				}
+			)
+			
 			(when (= (calldataload 0) "get")
 				{
 					[0x0](LLL
@@ -71,7 +88,7 @@
 							;body section
 							[0x0](LLL
 								{
-									
+											
 									; USAGE: 0 : "setdata", 32 : timelimit, 64 : quorum
 									; RETURNS: 1 if success, otherwise 0.
 									; NOTE set the time limit (in seconds) before the poll expires.
@@ -141,7 +158,7 @@
 											(unless @0x40 (return 0x40 32)) ; No users, no vote.
 											
 											[0x0] "getnickaddr"
-											[0x20] "Citizens"
+											[0x20] "SysAdmin"
 											(call (- (GAS) 100) @0x40 0 0x0 64 0x20 32)
 											
 											(unless @0x20 (return 0x20 32)) ; No citizens group, no vote.
@@ -265,7 +282,7 @@
 											)
 											
 											[0x0] "hasuser"
-											[0x20] "Citizens"
+											[0x20] "SysAdmin"
 											(call (- (GAS) 100) @0x60 0 0x0 64 0x0 32)
 											
 											(unless @0x0 (return 0x0 32) ) ; Unless user is a citizen - cancel.

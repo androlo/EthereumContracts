@@ -320,6 +320,63 @@
 								}
 							)
 							
+							; USAGE: 0 : "addtokens", 32 : amount
+							; RETURNS: 1
+							(when (= @0x0 "addtokens")
+								{
+									[0x40] "get"
+									[0x60] "actions"
+									(call (- (GAS) 100) @@0x10 0 0x0 64 0x80 32)
+									
+									(when @0x80 ; If so, validate the caller to make sure it's a proper action.
+										{
+											[0x40] "validate"
+											[0x60] (CALLER)
+											(call (- (GAS) 100) @0x80 0 0x40 64 0x40 32)
+	
+											(unless @0x40 (return 0x40 32) )		
+										}
+									)
+									
+									[[0x4]] (+ @@0x4 (calldataload 32) )
+									
+									[0x0] 1
+									(return 0x0 32)
+								}
+							)
+							
+							; USAGE: 0 : "removetokens", 32 : amount
+							; RETURNS: 1										
+							(when (= @0x0 "removetokens")
+								{
+									(when (< @@0x4 (calldataload 32))
+										{
+											[0x0] 0
+											(return 0x0 32)
+										}
+									)
+									
+									[0x40] "get"
+									[0x60] "actions"
+									(call (- (GAS) 100) @@0x10 0 0x0 64 0x80 32)
+									
+									(when @0x80 ; If so, validate the caller to make sure it's a proper action.
+										{
+											[0x40] "validate"
+											[0x60] (CALLER)
+											(call (- (GAS) 100) @0x80 0 0x40 64 0x40 32)
+	
+											(unless @0x40 (return 0x40 32) )		
+										}
+									)
+									
+									[[0x4]] (- @@0x4 (calldataload 32))
+									
+									[0x0] 1
+									(return 0x0 32)
+								}
+							)
+							
 							; USAGE: 0 : "kill"
 							; RETURNS: -
 							; NOTE: suicides the contract if called by "actions".											

@@ -263,8 +263,8 @@
 					[0x0] "get"
 					[0x20] "actions"
 					(call (- (GAS) 100) @@0x10 0 0x0 64 0x20 32)
-							
-							
+					
+					
 					; Only the actions contract can execute.
 					(unless (= @0x20 (CALLER)) 
 						{
@@ -285,7 +285,7 @@
 					(return 0x0 32)
 				}
 			)
-					
+			
 			; Only 'actiontypes'can do this.
 			(when (&& (= (calldataload 0) "kill") (= (CALLER) @0x0) ) (suicide (CALLER)) )
 			

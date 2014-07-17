@@ -1,7 +1,7 @@
 ; INIT
 {
 	;For DOUG integration
-	[[0x10]] 0x07a03c311f07ad616e551daaee83e330c702559b ;Doug Address
+	[[0x10]] 0x8bffd298a64ee36eb7b99dcc00d2c67259d15c60 ;Doug Address
 	;List data section
 	[[0x11]] 0x0										;Size of list
 	[[0x12]] 0x0										;Tail address
@@ -13,7 +13,7 @@
 	
 	[0x0](LLL
 	{
-		[[0x10]] 0x07a03c311f07ad616e551daaee83e330c702559b
+		[[0x10]] 0x8bffd298a64ee36eb7b99dcc00d2c67259d15c60
 		;body section
 		[0x0](LLL
 			{
@@ -141,7 +141,7 @@
 				
 				[0x60] "get"
 				[0x80] "actions"
-				(call (- (GAS) 100) @@0x10 0 0x60 64 0xA0 32) ; Check if there is a votes contract.
+				(call (- (GAS) 100) @@0x10 0 0x60 64 0xA0 32)
 				
 				(when @0xA0 ; If so, validate the caller to make sure it's a proper action.
 					{					
@@ -168,7 +168,16 @@
 				
 				;Store poll address at poll name
 				[[@0x20]] @0x40
-	
+				
+				[0x60] "isautopass"
+				(call (- (GAS) 100) @0x40 0 0x60 32 0xA0 32)
+				
+				(unless @0xA0
+					{					
+						[[(- @0x20 1)]]	86400 ; 24 hours by default.
+					}
+				)
+				
 				(if @@0x11 ; If there are elements in the list. 
 					{
 						;Update the list. First set the 'next' of the current head to be this one.
@@ -182,6 +191,7 @@
 					}
 				
 				)
+				
 				;And set this as the new head.
 				[[0x13]] @0x20
 				;Increase the list size by one.
@@ -276,6 +286,8 @@
 				;Now clear out this element and all its associated data.
 				
 				[[@0x20]] 0			;The address of the name
+				[[(- @0x20 1)]]	0	; time limit (if any)
+				[[(- @0x20 2)]]	0	; time limit (if any)
 				[[(+ @0x20 1)]] 0	;The address for its 'previous'
 				[[(+ @0x20 2)]] 0	;The address for its 'next'
 						
@@ -321,28 +333,39 @@
 				
 				[0x0] @@ (calldataload 32)
 				[0x20] "get"
-				(call (- (GAS) 100) @0x0 0 0x20 32 0x40 32) ; Get the address of the newly generated poll contract.
+				(call (- (GAS) 100) @0x0 0 0x20 32 0xA0 32) ; Get the address of the newly generated poll contract.
 				
 				; If this is not autopass, set the doug address of the returned contract.
-				(unless (= @0x40 @0x0)
+				(unless (= @0xA0 @0x0)
 					{
-						[0x0] "setdoug"
+						[0x0] "setdata"
 						[0x20] @@0x10
-						(call (- (GAS) 100) @0x40 0 0x0 64 0x60 32) ; Set doug
-				
-						(unless @0x60 (return 0x60 32) )
-						
-						[0x0] "settimelimit"
-						[0x20] @@ (- (calldataload 32) 1)
-						(call (- (GAS) 100) @0x40 0 0x0 64 0x60 32) ; Set the time limit.
+						[0x40] @@ (- (calldataload 32) 1)
+						[0x60] @@ (- (calldataload 32) 2)
+						(if @0x60
+							{
+								(call (- (GAS) 100) @0xA0 0 0x0 128 0x60 32) 
+							}	
+							{
+								(if @0x40
+									{
+										(call (- (GAS) 100) @0xA0 0 0x0 96 0x60 32) 
+									}
+									{
+										(call (- (GAS) 100) @0xA0 0 0x0 64 0x60 32) 
+									}
+								)
+								
+							}
+						)
 						
 						; Initialize the contract.
 						[0x0] "init"
-						(call (- (GAS) 100) @0x40 0 0x0 32 0x0 32) ; Init		
+						(call (- (GAS) 100) @0xA0 0 0x0 32 0x0 32) ; Init		
 					}
 				)
 				
-				(return 0x40 32)
+				(return 0xA0 32)
 			} ; end when body
 		) ;end when
 		
@@ -398,6 +421,48 @@
 				)
 				
 				[[(- (calldataload 32) 1)]] (calldataload 64)
+				
+				[0x0] 1
+				(return 0x0 32)
+			}
+		)
+		
+		; USAGE: 0: "setquorum" 32: "pollname", 64 : value
+		; RETURNS: 1 if successful, 0 if not.
+		; NOTES: Set the quorum for the poll "pollname". Needs to be less then 100.
+		; INTERFACE: PollFactoryManager 
+		(when (= @0x0 "setquorum") 
+			{
+				; Don't let caller access the reserved addresses.
+				(unless (> @0x20 0x40)
+					{
+						[0x0] 0
+						(return 0x0 32)
+					}
+				)
+								
+				[0x60] "get"
+				[0x80] "actions"
+				(call (- (GAS) 100) @@0x10 0 0x60 64 0xA0 32) ; Check if there is an action contract.
+				
+				(when @0xA0 ; If so, validate the caller to make sure it's a proper action.
+					{					
+						[0x60] "validate"
+						[0x80] (CALLER)
+						(call (- (GAS) 100) @0xA0 0 0x60 64 0x60 32)
+				
+						(unless @0x60 (return 0x60 32) )		
+					}
+				)
+				
+				(when (> (calldataload 32) 100)
+					{
+						[0x0] 0
+						(return 0x0 32)
+					}
+				)
+				
+				[[(- (calldataload 32) 2)]] (calldataload 64)
 				
 				[0x0] 1
 				(return 0x0 32)

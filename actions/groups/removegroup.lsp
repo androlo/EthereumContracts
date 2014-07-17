@@ -300,7 +300,7 @@
 					
 					[0x40] "dereg"
 					[0x60] (calldataload 32)
-					(call (- (GAS) 100) @0x0 0 0x40 64 0x0 32) ; Reg contract as a new action.
+					(call (- (GAS) 100) @0x0 0 0x40 64 0x0 32) ; Dereg the contract.
 					
 					[0x0] 1
 					(return 0x0 32)

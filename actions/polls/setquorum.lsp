@@ -138,33 +138,39 @@
 													[0x20] "actions"
 													(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
 															
-													(unless (&& (= (CALLER) @0x0) (> (calldataload 64) 0x40) (calldataload 32) ) 
+													(unless (= (CALLER) @0x0) 
 														{
 															[0x0] 0
 															(return 0x0 32)
 														}
 													) ; Only "actions" can do this.
 													
-													; Get the address of contract with name (calldataload 64) from doug.
-													[0x0] "get"
-													[0x20] (calldataload 64)
-													(call (- (GAS) 100) @@0x10 0 0x0 64 0x40 32)
-													
-													; If this returns a non-zero value, there is already a contract with this name.
-													; We don't let an already existing contract be overwritten.
-													(when @0x40
+													(unless (&& (> (calldataload 32) 0x40) (calldataload 64))
 														{
 															[0x0] 0
 															(return 0x0 32)
 														}
 													)
 													
-													; Store name and address of this contract.
-													[[0x11]] (calldataload 32) ; address
-													[[0x12]] (calldataload 64) ; name
+													[0x0] "get"
+													[0x20] "polltypes"
+													(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
 													
-													[0x0] 1
-													(return 0x0 32)
+													[0x20] "haspoll"
+													[0x40] (calldataload 32)
+													(call (- (GAS) 100) @0x0 0 0x20 64 0x0 32)
+													
+													(unless @0x0 (return 0x0 32) ) ; Stop if there is no poll of this type.
+													
+													(when (> (calldataload 64) 100) ; Quorum must be 0-100
+														{
+															[0x0] 0
+															(return 0x0 32)
+														}
+													)
+													
+													[[0x11]] (calldataload 32) ; poll name
+													[[0x12]] (calldataload 64) ; new quorum
 												}
 											)
 											
@@ -179,24 +185,30 @@
 												{													
 													[0x0] "get"
 													[0x20] "actions"
-													(call (- (GAS) 100) @@0x10 0 0x0 64 0x20 32)
+													(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
 															
-															
-													; Only the actions contract can execute.
-													(unless (= @0x20 (CALLER)) 
+													(unless (= (CALLER) @0x0) 
 														{
 															[0x0] 0
-															(return 0x0 0)
+															(return 0x0 32)
 														}
-													)
+													) ; Only "actions" can do this.
 													
-													; Register this one. @@0x11 is address.
-													[0x40] "reg"
+													[0x0] "get"
+													[0x20] "polltypes"
+													(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
+													
+													[0x20] "haspoll"
+													[0x40] @@0x11
+													(call (- (GAS) 100) @0x0 0 0x20 64 0x0 32)
+													
+													(unless @0x0 (return 0x0 32) ) ; Stop if there is no poll of this type.
+																															
+													[0x20] "setquorum"
+													[0x40] @@0x11
 													[0x60] @@0x12
-													[0x80] @@0x11
-													(call (- (GAS) 100) @@0x10 0 0x40 96 0x0 32) ; Reg contract as a new action.
+													(call (- (GAS) 100) @0x0 0 0x20 96 0x0 32) ; Change the poll type.
 													
-													[0x0] 1
 													(return 0x0 32)
 												}
 											)
@@ -219,7 +231,7 @@
 									(return 0x20 @0x0) ;Return body
 								} 0x20 )
 							[0x0](create 0 0x20 @0x0)
-							(return 0x0 32)
+							(return 0x0 32)		
 						}
 					)
 				
@@ -253,24 +265,44 @@
 				{
 					[0x0] "get"
 					[0x20] "actions"
-					(call (- (GAS) 100) @@0x10 0 0x0 64 0x20 32)
+					(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
 							
-							
-					; Only the actions contract can execute.
-					(unless (= @0x20 (CALLER)) 
+					(unless (= (CALLER) @0x0) 
 						{
 							[0x0] 0
-							(return 0x0 0)
+							(return 0x0 32)
+						}
+					) ; Only "actions" can do this.
+					
+					(unless (&& (> (calldataload 32) 0x40) (calldataload 64))
+						{
+							[0x0] 0
+							(return 0x0 32)
 						}
 					)
 					
-					; Register this one. @@0x11 is address.
-					[0x40] "reg"
-					[0x60] (calldataload 64)
-					[0x80] (calldataload 32)
-					(call (- (GAS) 100) @@0x10 0 0x40 96 0x0 32) ; Reg contract as a new action.
+					(when (> (calldataload 64) 100) ; Quorum must be 0-100
+						{
+							[0x0] 0
+							(return 0x0 32)
+						}
+					)
 					
-					[0x0] 1
+					[0x0] "get"
+					[0x20] "polltypes"
+					(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
+					
+					[0x20] "haspoll"
+					[0x40] (calldataload 32)
+					(call (- (GAS) 100) @0x0 0 0x20 64 0x20 32)
+					
+					(unless @0x20 (return 0x20 32) ) ; Stop if there is no poll of this type.
+																		
+					[0x20] "setquorum"
+					[0x40] (calldataload 32)
+					[0x60] (calldataload 64)
+					(call (- (GAS) 100) @0x0 0 0x20 96 0x0 32) ; Change the time limit.
+					
 					(return 0x0 32)
 				}
 			)

@@ -14,20 +14,19 @@
 ;
 ; 0 - 31		Meta: address to tail (address, 1 seg)
 ; 32 - 63		Meta: address to head (address, 1 seg)
-; 64 - 95: 		User nick (string, 1 seg)
+; 64 - 95: 	User nick (string, 1 seg)
 ; 96 - 127: 	Date of creation (string, 1 seg)
 ; 128 - 159:	Last update date (string, 1 seg)
 ; 160 - 223:	Title (string, 2 seg)
-; 224 - 255:   	Recipient
-; 256 - 287:	Size of data field
-; 288 - 1311: 	Text (string, 32 segs (1024 bytes)).
+; 224 - 255   Size of data field.
+; 256 - 1279: Text (string, 32 segs (1024 bytes)).
 ;
-; Total size: 41 segments (max 1,312 kb)
+; Total size: 40 segments (max 1,279 kb)
 
 ;INIT
 {
 	;For DOUG integration
-	[[0x10]] 0x8bffd298a64ee36eb7b99dcc00d2c67259d15c60 ;Doug Address
+	[[0x10]] 0x0c542ddea93dae0c2fcb2cf175f03ad80d6be9a0 ;Doug Address
 
 	;Pooled address section
 	[[0x11]] 0x0   	;Size of pool list
@@ -65,14 +64,14 @@
 		; INTERFACE: Doug
 		(when (&& (= @0x0 "kill") (= (CALLER) @@0x10) ) (suicide (CALLER)) ) ;Kill option
 		
-		; USAGE: 0 : "insert", 32 : payload ()
+		; USAGE: 0 : "insert", 32 : payload
 		; RETURNS: 1 if successful, 0 if fail.
 		; INTERFACE: Database
 		(when (&& (= @0x0 "insert") (> @0x20 0x40) ) ;When inserting an entry.
 			{
 				;Call the nick contract to get the user nick.
 				[0x40] "getnick"
-				[0x60] (ORIGIN)
+				[0x60] (caller)
 				(call (- (GAS) 100) @0x80 0 0x40 64 0xA0 32)
 				
 				(unless @0xA0 (return 0xA0 32) ) ;If caller does not have registered nick, they can't add data.
@@ -114,7 +113,7 @@
 				)
 				
 				;0x60 is the alloted address. Add uploader first.
-				[[(+ @0x60 2)]] (ORIGIN)
+				[[(+ @0x60 2)]] @0xA0
 				;Created
 				[[(+ @0x60 3)]] (TIMESTAMP)
 				;Updated
@@ -129,17 +128,15 @@
 						[[(+ @0x60 5)]] "No Title"
 					}
 				)
-				; To 
-				[[(+ @0x60 7)]] (calldataload 96)
 				
-				;Now the big chunk of data. at (128) we find the size of the description. 
-				[0x0] (calldataload 128)
+				;Now the big chunk of data. at (96) we find the size of the description. 
+				[0x0] (calldataload 96)
 				(when (> @0x0 32) 
 					[0x0] 32
-				) ; Don't allow larger entries then 32 memory addresses (28,8 kb).
+				) ; Don't allow larger entries then 900 memory addresses (28,8 kb).
 				
-				[0xA0] 128
-				[0x60] (+ @0x60 8)
+				[0xA0] 96
+				[0x60] (+ @0x60 7)
 				[[@0x60]] @0x0 ; Add size to size slot.
 				
 				(for [0x80]0 (< @0x80 @0x0) [0x80](+ @0x80 1)
@@ -161,12 +158,20 @@
 		; INTERFACE: Database
 		(when (&& (= @0x0 "modify") (>= @0x20 0x10020) )
 			{
+				;Call the nick contract to get the user nick.	
+				[0x40] "getnick"
+				[0x60] (CALLER)
+				(call (- (GAS) 100) @0x80 0 0x40 64 0x40 32)
+				
+				; No nick = no modification
+				(unless @0x40 (return @0x40 32))
+				
 				;If caller nick is not the same as uploader - cancel. This is also a nullcheck for the database entry.
-				(unless (= @@(+ @0x20 2) (ORIGIN)) 
+				(unless (= @@(+ @0x20 2) @0x40) 
 					{
 						[0x0] 0
 						(return 0x0 32)
-					}
+					}	
 				)
 				
 				[0x60] @0x20
@@ -183,18 +188,15 @@
 						[[(+ @0x60 5)]] "No Title"
 					}
 				)
-				
-				[[(+ @0x60 7)]] (calldataload 128)
-				
 				;Now the big chunk of data. We find the size of the description. 
 				
-				[0x0] (calldataload 160)
+				[0x0] (calldataload 128)
 				(when (> @0x0 32) 
 					[0x0] 32
-				) ; Don't allow larger entries then 32 memory addresses.
+				) ; Don't allow larger entries then 900 memory addresses (28,8 kb).
 				
-				[0xA0] 160
-				[0x60] (+ @0x60 8)
+				[0xA0] 128
+				[0x60] (+ @0x60 7)
 				[0xC0] @@ @0x60 ; Current size of database text (in storage addresses).
 				[[@0x60]] @0x0
 				
@@ -225,10 +227,15 @@
 		; RETURNS: 1 if successful, 0 if fail.
 		; INTERFACE: Database
 		(when (&& (= @0x0 "delete") (>= @0x20 0x10020) )  ; When deleting a post.
-			{	
+			{
+				;Call the userdata contract to get the user nick.
+				[0x100] "getnick"
+				[0x120] (caller)
+				(call (- (GAS) 100) @0x80 0 0x100 64 0x40 32)
+				
 				; If caller didn't post this - cancel. Also functions as a null-check.
 				; TODO make database admin group that are allowed to delete documents.
-				(unless (= (ORIGIN) @@(+ @0x20 2))
+				(unless (= @0x40 @@(+ @0x20 2))
 					{
 						[0x0] 0
 						(return 0x0 32)
@@ -236,9 +243,9 @@
 				)
 	
 				; clear the data
-				[0x40] @@(+ @0x20 8) ;Size of text
+				[0x40] @@(+ @0x20 7) ;Size of text
 				
-				[0x80] (+ @0x40 9) ; 0x80 is now where the text ends.
+				[0x80] (+ @0x40 8) ; 0x80 is now where the text ends.
 				
 				;loop from (address + 2) to (address + @0x80), to clear all data except head and tail slots.
 				(for [0x60]2 (< @0x60 @0x80) [0x60](+ @0x60 1)

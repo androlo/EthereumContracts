@@ -39,7 +39,7 @@
 							[[0x1]] "singleposition"
 							[[0x2]] 1 ; capacity
 						   ;[[0x3]] currentsize
-						   ;[[0x4]] holderaddress
+						   ;[[0x4]] holdername
 						   ;[[0x8]] group name
 						   
 							;body section
@@ -214,8 +214,48 @@
 									; RETURNS: Returns 0 (not allowed in single position)
 									; INTERFACE: Group
 									(when (= (calldataload 0) "clear")
-										{		
-											[0x0] 0
+										{	
+											[0x40] "get"
+											[0x60] "actions"
+											(call (- (GAS) 100) @@0x10 0 0x40 64 0x80 32)
+											
+											(when @0x80 ; If so, validate the caller to make sure it's a proper action.
+												{
+													[0x40] "validate"
+													[0x60] (CALLER)
+													(call (- (GAS) 100) @0x80 0 0x40 64 0x40 32)
+													
+													(unless @0x40 (return 0x40 32) )		
+												}
+											)
+											
+											; If the group is empty, return.
+											(unless @@0x3
+												{
+													[0x0] 1
+													(return 0x0 32)
+												}
+											)
+											
+											;Get users to 0x0
+											[0x0] "get"
+											[0x20] "users"
+											(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
+											
+											; Remove this group from the userdata of the current
+											; group member.
+											[0x40] "getuserdata"
+											[0x60] @@0x4
+											(call (- (GAS) 100) @0x0 0 0x40 64 0x40 32)
+											
+											[0x60] "removeuser"
+											[0x80] @@0x8
+											(call (- (GAS) 100) @0x40 0 0x60 64 0x40 32)
+											
+											[[0x3]] 0
+											[[@@0x4]] 0
+						   					[[0x4]] 0
+											[0x0] 1
 											(return 0x0 32)
 										}
 									)

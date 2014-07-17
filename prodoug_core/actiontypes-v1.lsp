@@ -1,7 +1,7 @@
 ; INIT
 {	
 	;For DOUG integration
-	[[0x10]] 0x07a03c311f07ad616e551daaee83e330c702559b ;Doug Address
+	[[0x10]] 0x8bffd298a64ee36eb7b99dcc00d2c67259d15c60 ;Doug Address
 	;List data section
 	[[0x11]] 0x0										;Size of list
 	[[0x12]] 0x0										;Tail address
@@ -14,7 +14,7 @@
 	[0x0](LLL
 	{
 		[[0x9]] "autopass" ; Default vote type
-		[[0x10]] 0x07a03c311f07ad616e551daaee83e330c702559b
+		[[0x10]] 0x8bffd298a64ee36eb7b99dcc00d2c67259d15c60
 		
 		;body section
 		[0x0](LLL

@@ -1,4 +1,3 @@
-;INIT
 {
 	[[0x9]] "autopass" ; Default vote type
 	
@@ -111,69 +110,7 @@
 													[0x0] "get"
 													[0x20] "actions"
 													(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
-															
-													(unless (&& (= (CALLER) @0x0) (> (calldataload 32) 0x40) )
-														{
-															[0x0] 0
-															(return 0x0 32)
-														}
-													) ; Only "actions" can do this.
 													
-													[0x0] "get"
-													[0x20] "users"
-													(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
-													
-													[0x20] "getnickaddr"
-													[0x40] "Senate"
-													(call (- (GAS) 100) @0x0 0 0x20 64 0x60 32)
-													
-													; If no 'Senate' group exists - cancel.
-													(unless @0x60 (return 0x60 32) )
-													
-													[0x20] "hasuser"
-													[0x40] (calldataload 32)
-													(call (- (GAS) 100) @0x60 0 0x20 64 0x20 32)
-													
-													(when @0x20 ; If user is already in this group - cancel.
-														{
-															[0x0] 0
-															(return 0x0 32)
-														}
-													)
-													
-													[0x20] "capacity"
-													(call (- (GAS) 100) @0x60 0 0x20 32 0x20 32)
-													
-													[0x40] "currentsize"
-													(call (- (GAS) 100) @0x60 0 0x40 32 0x40 32)
-													
-													(when (>= @0x40 @0x20) ; If there is no more room in the Senate group - cancel.
-														{
-															[0x0] 0
-															(return 0x0 32)
-														}
-													)
-													
-													[0x20] "getnickaddr"
-													[0x40] (calldataload 32)
-													(call (- (GAS) 100) @0x0 0 0x20 64 0x40 32)
-																								
-													; Stop if user does not exist.
-													(unless @0x40 (return 0x40 32) )
-													
-													[[0x11]] (calldataload 32) ; user name
-													
-													[0x0] 1
-													(return 0x0 32)
-												}
-											)
-											
-											(when (= (calldataload 0) "execute")
-												{													
-													[0x0] "get"
-													[0x20] "actions"
-													(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
-															
 													(unless (= (CALLER) @0x0)
 														{
 															[0x0] 0
@@ -185,34 +122,130 @@
 													[0x20] "users"
 													(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
 													
-													; Get user data to 0x80
-													[0x40] "getuserdata"
-													[0x60] @@0x11
-													(call (- (GAS) 100) @0x0 0 0x40 64 0x80 32)
+													; Get user data to 0x20
+													[0x20] "getuserdata"
+													[0x40] (calldataload 32)
+													(call (- (GAS) 100) @0x0 0 0x20 64 0x20 32)
+													(unless @0x20 (return 0x20 32) ) ; If no user, stop.
 													
-													(unless @0x80 (return 0x80 32) ) ; If no user @@0x11, stop.
+													; Get Senate address to 0x40
+													[0x40] "getnickaddr"
+													[0x60] "Senate"
+													(call (- (GAS) 100) @0x0 0 0x40 64 0x40 32)
+													(unless @0x40 (return 0x40 32) ) ; If no group exists - cancel.
 													
-													; Get Members address to 0xA0
-													[0x20] "getnickaddr"
+													[0x60] "capacity"
+													(call (- (GAS) 100) @0x40 0 0x60 32 0x60 32)
+													
+													[0x80] "currentsize"
+													(call (- (GAS) 100) @0x40 0 0x80 32 0x80 32)
+													
+													(when (>= @0x80 @0x60) ; If there is no more room - cancel.
+														{
+															[0x0] 0
+															(return 0x0 32)
+														}
+													)
+													
+													; Check that the user is a citizen, and is not in any of the other groups.
+													[0x60] "hasuser"
+													[0x80] "Citizens"
+													(call (- (GAS) 100) @0x20 0 0x60 64 0x60 32)
+													(unless @0x60 (return 0x60 32) )
+													
+													[0x60] "hasuser"
+													[0x80] "Court"
+													(call (- (GAS) 100) @0x20 0 0x60 64 0x60 32)
+													(when @0x60 
+														{
+															[0x0] 0 
+															(return 0x0 32)
+														}
+													)
+													
+													[0x60] "hasuser"
+													[0x80] "SysAdmin"
+													(call (- (GAS) 100) @0x20 0 0x60 64 0x60 32)
+													(when @0x60 
+														{
+															[0x0] 0 
+															(return 0x0 32)
+														}
+													)
+													
+													[[0x11]] (calldataload 32)
+													
+													[0x0] 1
+													(return 0x0 32)
+												}
+											)
+											
+											(when (= (calldataload 0) "execute")
+												{
+													[0x0] "get"
+													[0x20] "actions"
+													(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
+													
+													(unless (= (CALLER) @0x0)
+														{
+															[0x0] 0
+															(return 0x0 32)
+														}
+													) ; Only "actions" can do this.
+													
+													[0x0] "get"
+													[0x20] "users"
+													(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
+													
+													; Get user data to 0x20
+													[0x20] "getuserdata"
+													[0x40] @@0x11
+													(call (- (GAS) 100) @0x0 0 0x20 64 0x20 32)
+													(unless @0x20 (return 0x20 32) ) ; If no user, stop.
+													
+													; Get Senate address to 0x40
+													[0x40] "getnickaddr"
+													[0x60] "Senate"
+													(call (- (GAS) 100) @0x0 0 0x40 64 0x40 32)
+													(unless @0x40 (return 0x40 32) ) ; If no 'Court' group exists - cancel.
+													
+													; Check that the user is a citizen, and is not in any of the other groups.
+													[0x60] "hasuser"
+													[0x80] "Citizens"
+													(call (- (GAS) 100) @0x20 0 0x60 64 0x60 32)
+													(unless @0x60 (return 0x60 32) )
+													
+													[0x60] "hasuser"
+													[0x80] "Court"
+													(call (- (GAS) 100) @0x20 0 0x60 64 0x60 32)
+													(when @0x60 
+														{
+															[0x0] 0 
+															(return 0x0 32)
+														}
+													)
+													
+													[0x60] "hasuser"
+													[0x80] "SysAdmin"
+													(call (- (GAS) 100) @0x20 0 0x60 64 0x60 32)
+													(when @0x60 
+														{
+															[0x0] 0 
+															(return 0x0 32)
+														}
+													)
+													
+													; Add the user to the group. Size constraints and 'double adding' will be resolved here.
+													[0x60] "adduser"
+													[0x80] @@0x11
+													[0xA0] @0x20
+													(call (- (GAS) 100) @0x40 0 0x60 96 0xC0 32)
+													(unless @0xC0 (return 0xC0 32) )
+													
+													[0x60] "adduser"
 													[0x40] "Senate"
-													(call (- (GAS) 100) @0x0 0 0x20 64 0xA0 32)
-													
-													; If no 'Senate' group exists - cancel.
-													(unless @0xA0 (return 0xA0 32) )
-													
-													; Add the user to the Senate group.
-													[0x40] "adduser"
-													[0x60] @@0x11
-													;[0x80] @0x80
-													(call (- (GAS) 100) @0xA0 0 0x40 96 0x40 32)
-													
-													(unless @0x40 (return 0x40 32) )
-													
-													[0x0] "adduser"
-													[0x20] "Senate"
-													[0x40] @0xA0
-													(call (- (GAS) 100) @0x80 0 0x0 96 0x40 32)
-													
+													[0x80] @0x40
+													(call (- (GAS) 100) @0x20 0 0x60 96 0x40 32)
 													(unless @0x40 (return 0x40 32) )
 													
 													[0x0] 1
@@ -262,7 +295,7 @@
 					[0x0] "get"
 					[0x20] "actions"
 					(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
-							
+					
 					(unless (= (CALLER) @0x0)
 						{
 							[0x0] 0
@@ -274,34 +307,55 @@
 					[0x20] "users"
 					(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
 					
-					; Get user data to 0x80
-					[0x40] "getuserdata"
-					[0x60] (calldataload 32)
-					(call (- (GAS) 100) @0x0 0 0x40 64 0x80 32)
+					; Get user data to 0x20
+					[0x20] "getuserdata"
+					[0x40] (calldataload 32)
+					(call (- (GAS) 100) @0x0 0 0x20 64 0x20 32)
+					(unless @0x20 (return 0x20 32) ) ; If no user, stop.
 					
-					(unless @0x80 (return 0x80 32) ) ; If no user, stop.
-										
-					; Get Senate address to 0xA0
-					[0x20] "getnickaddr"
+					; Get Senate address to 0x40
+					[0x40] "getnickaddr"
+					[0x60] "Senate"
+					(call (- (GAS) 100) @0x0 0 0x40 64 0x40 32)
+					(unless @0x40 (return 0x40 32) ) ; If no 'Court' group exists - cancel.
+					
+					; Check that the user is a citizen, and is not in any of the other groups.
+					[0x60] "hasuser"
+					[0x80] "Citizens"
+					(call (- (GAS) 100) @0x20 0 0x60 64 0x60 32)
+					(unless @0x60 (return 0x60 32) )
+					
+					[0x60] "hasuser"
+					[0x80] "Court"
+					(call (- (GAS) 100) @0x20 0 0x60 64 0x60 32)
+					(when @0x60 
+						{
+							[0x0] 0 
+							(return 0x0 32)
+						}
+					)
+					
+					[0x60] "hasuser"
+					[0x80] "SysAdmin"
+					(call (- (GAS) 100) @0x20 0 0x60 64 0x60 32)
+					(when @0x60 
+						{
+							[0x0] 0 
+							(return 0x0 32)
+						}
+					)
+					
+					; Add the user to the group. Size constraints and 'double adding' will be resolved here.
+					[0x60] "adduser"
+					[0x80] (calldataload 32)
+					[0xA0] @0x20
+					(call (- (GAS) 100) @0x40 0 0x60 96 0xC0 32)
+					(unless @0xC0 (return 0xC0 32) )
+					
+					[0x60] "adduser"
 					[0x40] "Senate"
-					(call (- (GAS) 100) @0x0 0 0x20 64 0xA0 32)
-					
-					; If no 'Senate' group exists - cancel.
-					(unless @0xA0 (return 0xA0 32) )
-					
-					; Add the user to the Senate group. Size constraints will be resolved here.
-					[0x40] "adduser"
-					[0x60] (calldataload 32)
-					;[0x80] @0x80
-					(call (- (GAS) 100) @0xA0 0 0x40 96 0x40 32)
-					
-					(unless @0x40 (return 0x40 32) )
-					
-					[0x0] "adduser"
-					[0x20] "Senate"
-					[0x40] @0xA0
-					(call (- (GAS) 100) @0x80 0 0x0 96 0x40 32)
-					
+					[0x80] @0x40
+					(call (- (GAS) 100) @0x20 0 0x60 96 0x40 32)
 					(unless @0x40 (return 0x40 32) )
 					
 					[0x0] 1

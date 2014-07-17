@@ -154,7 +154,7 @@
 													(unless @0x0 (return 0x0 32))
 													
 													; Must be higher then 100 finney.
-													(when (< (calldataload 32) 100finney)
+													(when (&& (< (calldataload 32) 100finney) (> (calldataload 32) 100ether) )
 														{
 															[0x0] 0
 															(return 0x0 32)

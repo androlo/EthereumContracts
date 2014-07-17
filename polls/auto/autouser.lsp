@@ -1,6 +1,7 @@
 {
-		;body section
-		[0x0](LLL
+	
+	;body section
+	[0x0](LLL
 		{
 			; USAGE: 0 : "setdoug", 32 : dougaddress
 			; RETURNS: -
@@ -59,11 +60,26 @@
 				}
 			)
 			
-			; USAGE: 0 : "doautopass"
+			; USAGE: 0 : "doautopass", 32 : user address
 			; RETURNS: 1 if successful, otherwise 0.
 			; INTERFACE Poll
 			(when (= (calldataload 0) "doautopass") 
 				{
+					
+					[0x0] "get"
+					[0x20] "users"
+					(call (- (GAS) 100) @@0x10 0 0x0 64 0x0 32)
+					
+					; If no user contract - cancel.
+					(unless @0x0 (return 0x0 32) )
+					
+					[0x20] "getuserdataaddr"
+					[0x40] (calldataload 32)
+					(call (- (GAS) 100) @0x0 0 0x20 64 0x20 32)
+					
+					; If no such user - cancel.
+					(unless @0x20 (return 0x20 32) )
+					
 					[0x0] 1
 					(return 0x0 32)
 				}
@@ -78,4 +94,4 @@
 					
 		} 0x20 )
 	(return 0x20 @0x0) ;Return body
-}	
+}
