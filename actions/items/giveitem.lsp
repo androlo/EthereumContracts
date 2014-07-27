@@ -91,12 +91,12 @@
 				}
 			)
 			
-			; USAGE: 0 : "autoexecute", 32: params (name:amount:price)
+			; USAGE: 0 : "autoexecute", 32: params (item name, amount, recipient address)
 			; RETURNS: 1 if successful, 0 if not.
 			; NOTES: Autoexecutes the action
 			; INTERFACE Action
 			(when (= (calldataload 0) "autoexecute")
-				{
+				{					
 					[0x0] "get"
 					[0x20] "actions"
 					(call (- (GAS) 100) @@0x10 0 0x0 64 0x20 32)
@@ -116,55 +116,62 @@
 					(unless @0x0 (return 0x0 32))
 					
 					[0x20] "getuserdataaddr"
-					[0x40] (ORIGIN)
+					[0x40] (calldataload 96)
 					(call (- (GAS) 100) @0x0 0 0x20 64 0x20 32)
 					
 					(unless @0x20 (return 0x20 32))
 					
-					[0x40] "getholdings"
-					(call (- (GAS) 100) @0x20 0 0x40 32 0x40 32)
+					[0x40] "get"
+					[0x60] "items"
+					(call (- (GAS) 100) @@0x10 0 0x40 64 0x40 32)
 					
+					(unless @0x40 (return 0x40 32))
 					
-					[0x60] "getitem"
+					[0x60] "getitemfull"
 					[0x80] (calldataload 32)
-					(call (- (GAS) 100) @0x40 0 0x60 64 0x60 32)
+					(call (- (GAS) 100) @0x40 0 0x60 64 0x60 128)
+					;0x60 -> type
+					;0x80 -> stacksize
+					;0xA0 -> contract address
+					;0xC0 -> creator/owner address
+										
+					(unless @0x60 (return 0x60 32));If no such item exists - cancel
 					
-					(when (< @0x60 (calldataload 64)) ; If user does not have the required amount. 
+					[[0x1007]] (ORIGIN) ; TODO Remove
+					
+					(unless (= (ORIGIN) @0xC0) ; Unless the giver owns the item - cancel.
 						{
 							[0x0] 0
 							(return 0x0 32)
 						}
 					)
 					
-					[0x80] "get"
-					[0xA0] "items"
-					(call (- (GAS) 100) @@0x10 0 0x80 64 0x80 32)					
+					;Now go to user
+					[0x0] "getholdings"
+					(call (- (GAS) 100) @0x20 0 0x0 32 0x0 32)
 					
-					[0xA0] "getitem"
-					[0xC0] (calldataload 32)
-					(call (- (GAS) 100) @0x80 0 0xA0 64 0xA0 32)
+					(when @0x80 
+						{
+							[0x20] "getitem"
+							[0x40] (calldataload 32)
+							(call (- (GAS) 100) @0x0 0 0x20 64 0x20 32)
+							(unless (<= (+ @0x20 (calldataload 64)) @0x80)
+								{
+									[0x0] 0
+									(return 0x0 32)
+								}
+							)
+						}
+					)
 					
-					(unless @0xA0 (return 0xA0 32)) ; If the item does not exist in the database - cancel.
+					[0x20] "additem"
+					[0x40] (calldataload 32)
+					[0xC0] @0xA0
+					[0xA0] @0x60 				
+					[0x60] (calldataload 64)
+					[0x80] "personal"
+					(call (- (GAS) 100) @0x0 0 0x20 160 0x0 32)
 					
-					; Remove from user holdings
-					[0xA0] "removeitem"
-					[0xC0] (calldataload 32)
-					[0xE0] (calldataload 64)
-					(call (- (GAS) 100) @0x40 0 0xA0 96 0xA0 32)
-					
-					[0xA0] "get"
-					[0xC0] "marketplace"
-					(call (- (GAS) 100) @@0x10 0 0xA0 64 0x0 32)
-					
-					(unless @0x0 (return 0x0 32))
-					
-					[0x60] "post"
-					[0x80] (calldataload 32)
-					[0xA0] (calldataload 64)
-					[0xC0] (calldataload 96)
-					(call (- (GAS) 100) @0x0 0 0x60 128 0x60 32)
-					
-					[0x0] 1
 					(return 0x0 32)
 				}
 			)

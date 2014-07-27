@@ -5,10 +5,16 @@
 	[0x0] "Cardboard Box"
 	[[@0x0]] "misc" ; Category
 	[[(- @0x0 1)]] 1; Max stack size.
+	[[(- @0x0 2)]] 0
+	[[(- @0x0 3)]] @@0x10
+	[[(- @0x0 4)]] (TIMESTAMP)
 	
 	[0x20] "3-wheeled Shopping Cart"
 	[[@0x20]] "misc"
-	[[(- @0x20 1)]] 1
+	[[(- @0x20 1)]] @@0x10
+	[[(- @0x0 2)]] 0
+	[[(- @0x0 3)]] @@0x10
+	[[(- @0x0 4)]] (TIMESTAMP)
 	
 	[[0x11]] 2
 	[[0x12]] @0x0
@@ -45,7 +51,7 @@
 			)
 			
 			; USAGE: 0: "getitemfull" 32: "name"
-			; RETURNS: Pointer to the item with name "name", or null.
+			; RETURNS: type:stacksize:address:owner:timestamp.
 			; INTERFACE: Items
 			(when (= @0x0 "getitemfull")
 				{
@@ -56,16 +62,22 @@
 							(return 0x0 32)
 						}
 					)
+					
 					[0x0] @@ (calldataload 32)
+					
+					(unless @0x0 (return 0x0 32))
+					
 					[0x20] @@(- (calldataload 32) 1)
 					[0x40] @@(- (calldataload 32) 2)
-					(return 0x0 96)
+					[0x60] @@(- (calldataload 32) 3)
+					[0x80] @@(- (calldataload 32) 4)
+					(return 0x0 160)
 				}
 			)
 			
 			[0x40] (calldataload 64)
 			
-			; USAGE: 0: "registeritem" 32: "name", 64: type, 96: maxstacksize 128 : address (optional)
+			; USAGE: 0: "registeritem" 32: "name", 64: type, 96: maxstacksize, 128 : address, 160 : creator address
 			; RETURNS: 1 if success, 0 if fail.
 			; INTERFACE Items
 			(when (= @0x0 "registeritem")
@@ -104,6 +116,8 @@
 					[[@0x20]] @0x40
 					[[(- @0x20 1)]] (calldataload 96)  ; maxstacksize
 					[[(- @0x20 2)]] (calldataload 128) ; address
+					[[(- @0x20 3)]] (calldataload 160) ; owner
+					[[(- @0x20 4)]] (TIMESTAMP)
 		
 					(if @@0x11 ; If there are elements in the list. 
 						{
@@ -118,6 +132,7 @@
 						}
 					
 					)
+					
 					;And set this as the new head.
 					[[0x13]] @0x20
 					;Increase the list size by one.
@@ -212,6 +227,8 @@
 					[[(+ @0x20 2)]] 0	;The address for its 'next'
 					[[(- @0x20 1)]] 0	;The address for its maxstacksize
 					[[(- @0x20 2)]] 0	;The address for its optional contract address
+					[[(- @0x20 3)]] 0	;The creator address
+					[[(- @0x20 4)]] 0	;The timestamp
 					
 					;Decrease the size counter
 					[[0x11]] (- @@0x11 1)

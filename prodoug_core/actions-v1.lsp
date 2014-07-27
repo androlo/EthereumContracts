@@ -18,7 +18,7 @@
 	
 	;[[0x16]] log address
 	
-	[[0x17]] 0 ; Do logging? (0 off, 1 on).
+	[[0x17]] 1 ; Do logging? (0 off, 1 on).
 
 	[0x0] "reg"
 	[0x20] "actions"
@@ -53,6 +53,7 @@
 								[[(+ @0x0 1)]] (calldataload 64)
 								[[(+ @0x0 2)]] (calldataload 96)
 								[[(+ @0x0 3)]] (calldataload 128)
+								[[(+ @0x0 4)]] (NUMBER)
 							}
 						)
 						
@@ -63,7 +64,9 @@
 								[[(+ @0x0 3)]] (calldataload 128)
 								[[(+ @0x0 4)]] (calldataload 160)
 								[[(+ @0x0 5)]] (calldataload 192)
-								[[(+ @0x0 6)]] (calldataload 224)			
+								[[(+ @0x0 6)]] (calldataload 224)
+								[[(+ @0x0 7)]] (NUMBER)
+								
 							}
 						)
 						

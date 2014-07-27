@@ -267,14 +267,14 @@
 		; USAGE: 0 : "getentry", 32 : entry address
 		; RETURNS: posteraddress:timestamp:item:amount:price (160 bytes)
 		; INTERFACE: Exchange
-		(when (&& (= @0x0 "getentry") (>= @0x20 0x10020) )
+		(when (&& (= @0x0 "getentry") (>= (calldataload 32) 0x10020) )
 			{
 				
-				[0x0] @@(+ @0x20 2)
-				[0x20] @@(+ @0x20 3)
-				[0x40] @@(+ @0x20 4)
-				[0x60] @@(+ @0x20 5)
-				[0x80] @@(+ @0x20 6)
+				[0x0]  @@(+ (calldataload 32) 2)
+				[0x20] @@(+ (calldataload 32) 3)
+				[0x40] @@(+ (calldataload 32) 4)
+				[0x60] @@(+ (calldataload 32) 5)
+				[0x80] @@(+ (calldataload 32) 6)
 				(return 0x0 160)
 			}
 		)

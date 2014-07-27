@@ -660,7 +660,7 @@
 							[0x20] (calldataload 32)
 							
 							; USAGE: 0: "getitem" 32: "name"
-							; RETURNS: Pointer to the item with name "name", or null.
+							; RETURNS: Amount held.
 							; INTERFACE: Holdings
 							(when (= @0x0 "getitem")
 								{
@@ -713,7 +713,7 @@
 									[0x60] "get"
 									[0x80] "actions"
 									(call (- (GAS) 100) @@0x10 0 0x60 64 0xA0 32) ; Check if there is a votes contract.
-																		
+									
 									(when @0xA0 ; If so, validate the caller to make sure it's a proper action.
 										{
 											[0x60] "validate"
@@ -789,7 +789,6 @@
 										}
 									)
 									
-									;If the name has no address (does not exist) - cancel.
 									[0x40] @@ @0x20
 									(unless @0x40 
 										{
