@@ -1,3 +1,3 @@
-Contracts for the PRODOUG (People's Republic of DOUG) platform.
+Old LLL Contracts for the PRODOUG (People's Republic of DOUG) platform.
 
-Not done.
+Legacy code.
