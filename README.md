@@ -1,3 +1,5 @@
+For up-to-date testing documentation, refer to https://ethereum-tests.readthedocs.io/en/latest/.
+
 Old LLL Contracts for the PRODOUG (People's Republic of DOUG) platform.
 
 Legacy code.
